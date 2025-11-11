@@ -5,6 +5,9 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
+# Ensure new architecture helpers run whenever pods are installed.
+ENV['RCT_NEW_ARCH_ENABLED'] = '1' if ENV['RCT_NEW_ARCH_ENABLED'].nil?
+
 platform :ios, '15.1'
 workspace 'jitsi-meet'
 
