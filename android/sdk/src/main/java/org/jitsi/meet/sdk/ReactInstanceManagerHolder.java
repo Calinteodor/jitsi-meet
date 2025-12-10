@@ -22,10 +22,9 @@ import android.app.Application;
 import androidx.annotation.Nullable;
 
 import com.facebook.hermes.reactexecutor.HermesExecutorFactory;
+import com.facebook.react.internal.featureflags.ReactNativeFeatureFlags;
 import com.facebook.react.ReactInstanceManager;
-import com.facebook.react.ReactInstanceManagerBuilder;
 import com.facebook.react.ReactPackage;
-import com.facebook.react.ReactPackageTurboModuleManagerDelegate;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
