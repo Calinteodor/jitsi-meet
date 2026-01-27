@@ -126,6 +126,10 @@ jobs:
         node -v
         npm -v
     - run: npm install
+    - name: Generate React Native autolinking
+      run: |
+        mkdir -p android/build/generated/autolinking
+        npx react-native config > android/build/generated/autolinking/autolinking.json
     - run: |
         cd android
         ./gradlew :sdk:clean
