@@ -188,7 +188,7 @@ public class JitsiMeetView extends FrameLayout {
 
             boolean isFabricEnabled = ReactNativeFeatureFlags.enableFabricRenderer();
             reactRootView.setIsFabric(isFabricEnabled);
-            
+
             reactRootView.startReactApplication(
                 ReactInstanceManagerHolder.getReactInstanceManager(),
                 appName,
