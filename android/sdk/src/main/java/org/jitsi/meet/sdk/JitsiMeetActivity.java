@@ -95,24 +95,49 @@ public class JitsiMeetActivity extends AppCompatActivity
     }
 
     public static void addTopBottomInsets(@NonNull Window w, @NonNull View v) {
+        android.util.Log.e(TAG, ">>> addTopBottomInsets METHOD CALLED <<<");
+
+        // Enable edge-to-edge mode
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(w, false);
+
+        w.setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        w.setNavigationBarColor(android.graphics.Color.TRANSPARENT);
 
         View decorView = w.getDecorView();
 
-        decorView.post(() -> {
-            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(decorView);
-            if (insets != null) {
-                ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-                params.topMargin = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
-                params.bottomMargin = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+        final android.util.DisplayMetrics metrics = v.getContext().getResources().getDisplayMetrics();
+        final int screenHeight = metrics.heightPixels;
+        final float density = metrics.density;
+
+        ViewCompat.setOnApplyWindowInsetsListener(decorView, (view, windowInsets) -> {
+            
+            int statusBarInset = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            int navBarInset = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+
+            // Apply defensive caps to prevent device-specific bugs with inflated inset values
+            final int maxTopInset = Math.min((int)(60 * density), (int)(screenHeight * 0.10));
+            final int maxBottomInset = Math.min((int)(120 * density), (int)(screenHeight * 0.10));
+
+            int topInset = Math.min(statusBarInset, maxTopInset);
+            int bottomInset = Math.min(navBarInset, maxBottomInset);
+
+            // Apply insets as margins
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+
+            if (params.topMargin != topInset || params.bottomMargin != bottomInset) {
+                params.topMargin = topInset;
+                params.bottomMargin = bottomInset;
                 v.setLayoutParams(params);
-
-                decorView.setOnApplyWindowInsetsListener((view, windowInsets) -> {
-                    view.setBackgroundColor(JitsiMeetView.BACKGROUND_COLOR);
-
-                    return windowInsets;
-                });
             }
+
+            view.setBackgroundColor(JitsiMeetView.BACKGROUND_COLOR);
+
+            // Consume insets to prevent double-application
+            return WindowInsetsCompat.CONSUMED;
         });
+
+        // Trigger initial inset application
+        ViewCompat.requestApplyInsets(decorView);
     }
 
     // Overrides
@@ -136,10 +161,11 @@ public class JitsiMeetActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_jitsi_meet);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
-            && getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            addTopBottomInsets(getWindow(), findViewById(android.R.id.content));
-        }
+       
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM 
+        && getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            addTopBottomInsets(getWindow(), findViewById(android.R.id.content)); 
+            }
 
         this.jitsiView = findViewById(R.id.jitsiView);
 
