@@ -2,42 +2,32 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.facebook.react'
 apply plugin: 'kotlin-android'
 
-// The com.facebook.react plugin generates PackageList.java and
-// ReactNativeApplicationEntryPoint.java from autolinking. We don't use these
-// because the SDK manages packages manually via ReactInstanceManagerHolder.
-// However, PackageList.java fails to compile because the app module doesn't
-// directly depend on the React Native packages (they're implementation deps of
-// the SDK). We clear these generated files to avoid compilation errors while
-// still getting the C++ autolinking code (OnLoad.cpp) that we DO need.
+// We need com.facebook.react for C++ autolinking (OnLoad.cpp / TurboModules),
+// Delete generated Java files to avoid compile errors from missing transitive deps.
 afterEvaluate {
-    tasks.matching { it.name == "generateAutolinkingPackageList" }.configureEach {
-        doLast {
-            def genDir = file("${buildDir}/generated/autolinking/src/main/java/com/facebook/react")
-            genDir.listFiles()?.each { file ->
-                if (file.name.endsWith('.java')) {
-                    file.text = "package com.facebook.react;\n// Intentionally empty - Jitsi uses manual package registration.\n"
-                }
+    ["generateAutolinkingPackageList", "generateReactNativeEntryPoint"].each { taskName ->
+        tasks.matching { it.name == taskName }.configureEach {
+            doLast {
+                file("${buildDir}/generated/autolinking/src/main/java").deleteDir()
             }
         }
     }
-    tasks.matching { it.name == "generateReactNativeEntryPoint" }.configureEach {
-        doLast {
-            def genDir = file("${buildDir}/generated/autolinking/src/main/java/com/facebook/react")
-            genDir.listFiles()?.each { file ->
-                if (file.name.endsWith('.java') && file.name != 'PackageList.java') {
-                    file.text = "package com.facebook.react;\n// Intentionally empty - Jitsi uses manual package registration.\n"
-                }
-            }
-        }
-    }
+}
 
-    // Delete the .cxx cmake cache before the native clean task runs.
-    // Without this, externalNativeBuildClean triggers cmake reconfiguration
-    // which fails because codegen JNI dirs (from autolinked libraries) were
-    // already cleaned.
-    tasks.matching { it.name.startsWith("externalNativeBuildClean") }.configureEach {
-        doFirst {
-            delete file('.cxx')
+// Cmake references codegen JNI dirs from library modules that may not exist yet.
+// Ensure cmake tasks run after all libraries generate their codegen artifacts,
+// and clear stale .cxx cache before each configure to avoid variant mismatch.
+gradle.projectsEvaluated {
+    def codegenTasks = rootProject.subprojects.collectMany { sub ->
+        sub.tasks.matching { it.name == "generateCodegenArtifactsFromSchema" }
+    }
+    tasks.configureEach {
+        if (it.name.startsWith("configureCMake") || it.name.startsWith("buildCMake") ||
+            it.name.startsWith("externalNativeBuildClean")) {
+            it.dependsOn(codegenTasks)
+        }
+        if (it.name.startsWith("configureCMake")) {
+            it.doFirst { delete file('.cxx') }
         }
     }
 }
