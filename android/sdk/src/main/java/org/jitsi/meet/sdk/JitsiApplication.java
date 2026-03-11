@@ -23,6 +23,8 @@ import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactHost;
 import com.facebook.react.defaults.DefaultReactHost;
 
+import java.util.Collections;
+
 /**
  * Base Application class for Jitsi Meet that implements {@link ReactApplication}.
  *
@@ -39,7 +41,17 @@ public class JitsiApplication extends Application implements ReactApplication {
     public ReactHost getReactHost() {
         if (mReactHost == null) {
             mReactHost = DefaultReactHost.getDefaultReactHost(
-                this, new JitsiReactNativeHost(this), null);
+                this,
+                ReactHostHolder.getReactNativePackages(),
+                "index.android",       /* jsMainModulePath */
+                "index.android.bundle", /* jsBundleAssetPath */
+                null,                   /* jsBundleFilePath */
+                null,                   /* jsRuntimeFactory (defaults to Hermes) */
+                BuildConfig.DEBUG, /* useDevSupport */
+                Collections.emptyList(), /* cxxReactPackageProviders */
+                e -> { throw new RuntimeException(e); }, /* exceptionHandler */
+                null                    /* bindingsInstaller */
+            );
         }
         return mReactHost;
     }
